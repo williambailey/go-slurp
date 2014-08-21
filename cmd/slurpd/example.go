@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/williambailey/go-slurp/slurp"
@@ -18,6 +19,10 @@ func init() {
 			},
 		})
 		s.RegisterProducer("ex", &exampleProducer{})
+		slurpd.HTTPHandlerList = append(
+			slurpd.HTTPHandlerList,
+			&httpHandlerExample{},
+		)
 	})
 }
 
@@ -43,7 +48,7 @@ func (a *exampleAnalyst) AnalysisRequest(pointInTime time.Time) *slurp.AnalysisR
 		SlurperFunc: func(items <-chan *slurp.Item) {
 			for _ = range items {
 				// blah...
-				time.Sleep(time.Duration(rand.Intn(5)) * time.Millisecond)
+				time.Sleep(time.Duration(rand.Intn(1000000)) * time.Nanosecond)
 			}
 		},
 	}
@@ -68,6 +73,7 @@ func (a *exampleProducer) Produce(from time.Time, until time.Time) slurp.Product
 	var f slurp.ProductionRunFunc
 	f = func(ch chan<- *slurp.Item) {
 		for i := from.UnixNano(); i < until.UnixNano(); i += int64(time.Second) {
+			time.Sleep(time.Duration(rand.Intn(1000000)) * time.Nanosecond)
 			item := slurp.NewItem(time.Unix(0, i))
 			ch <- item
 		}
@@ -87,10 +93,42 @@ func (l *exampleLoader) Description() string {
 }
 
 func (l *exampleLoader) LoadData(_ *slurp.Item) (string, interface{}) {
-	i := rand.Intn(100)
+	i := rand.Intn(1000000)
 	time.Sleep(time.Duration(i) * time.Nanosecond)
-	if i < 50 {
+	if i < 333333 {
 		return "example", i
+	} else if i < 666666 {
+		return "example", nil
 	}
 	return "", nil
+}
+
+type httpHandlerExample struct{}
+
+func (h *httpHandlerExample) Method() string {
+	return "GET"
+}
+
+func (h *httpHandlerExample) Path() string {
+	return "/example"
+}
+
+func (h *httpHandlerExample) Description() string {
+	return "Sets off and example slurp."
+}
+
+func (h *httpHandlerExample) Readme() string {
+	return "Saves having to use the other APIs :-)"
+}
+
+func (h *httpHandlerExample) HandlerFunc(s *slurpd.Slurpd) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p, _ := s.Producer("ex")
+		a, _ := s.Analyst("ex")
+		ar := make([]*slurp.AnalysisRequest, 2)
+		ar[0] = a.AnalysisRequest(time.Now().Add(-24 * time.Hour))
+		ar[1] = a.AnalysisRequest(time.Now().Add(-36 * time.Hour))
+		go s.SlurpAnalysisRequest(p, ar)
+		slurpd.WriteJSONResponse(w, "OK")
+	}
 }

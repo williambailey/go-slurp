@@ -40,21 +40,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	slurpd := slurpd.NewSlurpd()
-	slurpd.SlurpBuffer(flagSlurpBuffer)
+	sd := slurpd.NewSlurpd()
+	sd.SlurpBuffer(flagSlurpBuffer)
 
 	// Call any loader functions that we might have.
 	log.Printf("Calling loader functions (%d).\n", len(loaderFunc))
 	for i := range loaderFunc {
 		log.Printf("- Function %d\n", i+1)
-		loaderFunc[i](slurpd)
+		loaderFunc[i](sd)
 	}
 	loaderFunc = nil
 
 	// Wire up the HTTP API.
 	log.Printf("Configuring HTTP API.\n")
 	router := mux.NewRouter()
-	slurpd.ConfigureRouter(router.PathPrefix("/api").Subrouter())
+	slurpd.ConfigureRouter(sd, router.PathPrefix("/api").Subrouter())
 
 	log.Printf("Starting HTTP server on %s\n", flagListen)
 	http.Handle("/", router)
