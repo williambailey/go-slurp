@@ -2,7 +2,7 @@ package slurpd
 
 import (
 	"encoding/json"
-	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -54,7 +54,9 @@ type HTTPHandler interface {
 	HandlerFunc(s *Slurpd) http.HandlerFunc
 }
 
-type httpHandlerDescribeSelf struct{}
+type httpHandlerDescribeSelf struct {
+	template *template.Template
+}
 
 func (h *httpHandlerDescribeSelf) Method() string {
 	return "GET"
@@ -73,13 +75,42 @@ func (h *httpHandlerDescribeSelf) Readme() string {
 }
 
 func (h *httpHandlerDescribeSelf) HandlerFunc(s *Slurpd) http.HandlerFunc {
+	if h.template == nil {
+		h.template = template.Must(template.New("describe").Parse(`
+<!doctype html>
+<html>
+	<head>
+		<title>Slurpd HTTP API</title>
+		<meta charset="utf-8" />
+	</head>
+  <body>
+		<main>
+			<header>
+				<h1>Slurpd HTTP API</h1>
+			</header>
+{{range .}}
+			<article class="http-handler">
+				<header>
+					<h2>
+						<span class="method">{{.Method}}</span>
+						{{if eq .Method "GET"}}<a class="path" href=".{{.Path}}">{{.Path}}</a>
+						{{else}}<span class="path">{{.Path}}</span>
+						{{end}}
+					</h2>
+					<p class="description">{{.Description}}<p>
+				</header>
+				<pre class="readme">{{.Readme}}</pre>
+			</article>
+{{end}}
+		</main>
+	</body>
+</html>
+		`))
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Tidy up and escape things correctly etc.
-		fmt.Fprintf(w, "<h1>Welcome to the slurpd API!</h1>\n")
-		for _, h := range HTTPHandlerList {
-			fmt.Fprintf(w, "<h2>%s <a href=\".%s\">%s</a></h2>\n", h.Method(), h.Path(), h.Path())
-			fmt.Fprintf(w, "<p>%s</p>\n", h.Description())
-			fmt.Fprintf(w, "<blockquote>%s</blockquote>\n", h.Readme())
+		err := h.template.Execute(w, HTTPHandlerList)
+		if err != nil {
+			log.Panicln(err)
 		}
 	}
 }
