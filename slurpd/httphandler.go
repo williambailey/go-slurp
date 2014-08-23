@@ -393,7 +393,7 @@ func (h *httpHandlerAnalysisRequest) HandlerFunc(s *Slurpd) http.HandlerFunc {
 			}
 			ar[i] = s.analystMap[a.Analyst].AnalysisRequest(a.Time)
 		}
-		go s.SlurpAnalysisRequest(p, ar)
+		go s.SlurpAnalysisRequest(p, ar...)
 		WriteJSONResponse(w, "OK")
 	}
 }

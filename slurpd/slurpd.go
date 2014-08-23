@@ -125,7 +125,7 @@ func (s *Slurpd) SlurpBuffer(size int) {
 
 // SlurpAnalysisRequest performs a slurp for the requests using data provided
 // by the producer.
-func (s *Slurpd) SlurpAnalysisRequest(producer slurp.Producer, analysisRequest []*slurp.AnalysisRequest) {
+func (s *Slurpd) SlurpAnalysisRequest(producer slurp.Producer, analysisRequest ...*slurp.AnalysisRequest) {
 	// TODO: Better duplication and range checking. I.e. If we have a large
 	//       range with a big time range that is not going to be analysed
 	//       then it will most likely be better to split up the request

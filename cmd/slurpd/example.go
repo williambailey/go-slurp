@@ -125,10 +125,11 @@ func (h *httpHandlerExample) HandlerFunc(s *slurpd.Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p, _ := s.Producer("ex")
 		a, _ := s.Analyst("ex")
-		ar := make([]*slurp.AnalysisRequest, 2)
-		ar[0] = a.AnalysisRequest(time.Now().Add(-24 * time.Hour))
-		ar[1] = a.AnalysisRequest(time.Now().Add(-36 * time.Hour))
-		go s.SlurpAnalysisRequest(p, ar)
+		go s.SlurpAnalysisRequest(
+			p,
+			a.AnalysisRequest(time.Now().Add(-24*time.Hour)),
+			a.AnalysisRequest(time.Now().Add(-36*time.Hour)),
+		)
 		slurpd.WriteJSONResponse(w, "OK")
 	}
 }
