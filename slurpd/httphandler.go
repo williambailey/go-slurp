@@ -322,7 +322,7 @@ func (h *httpHandlerAnalysisRange) HandlerFunc(s *Slurpd) http.HandlerFunc {
 			log.Printf("Unknown analyst %q.\n", an.Analyst)
 			return
 		}
-		timeFrom, timeUntil := s.analystMap[an.Analyst].AnalysisRange(an.Time)
+		timeFrom, timeUntil := s.analystMap[an.Analyst].RangeForAnalysisRequest(an.Time)
 		response := &analysisRange{
 			TimeFrom:  timeFrom,
 			TimeUntil: timeUntil,
@@ -346,18 +346,40 @@ func (h *httpHandlerAnalysisRequest) Description() string {
 }
 
 func (h *httpHandlerAnalysisRequest) Readme() string {
-	return "blah blah blah."
+	return `Request:
+{
+	"producer": "foo",
+	"pointInTimeAnalysis": [
+		{
+			"analyst": "bar",
+			"time": "..."
+		}
+	],
+	"rangeAnalysis": [
+		{
+			"analyst": "bar",
+			"from": "...",
+			"until": "..."
+		}
+	]
+}`
 }
 
 func (h *httpHandlerAnalysisRequest) HandlerFunc(s *Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type analysis struct {
+		type pointInTimeAnalysis struct {
 			Analyst string    `json:"analyst"`
 			Time    time.Time `json:"time"`
 		}
+		type rangeAnalysis struct {
+			Analyst string    `json:"analyst"`
+			From    time.Time `json:"from"`
+			Until   time.Time `json:"until"`
+		}
 		type request struct {
-			Producer string     `json:"producer"`
-			Analysis []analysis `json:"analysis"`
+			Producer            string                `json:"producer"`
+			PointInTimeAnalysis []pointInTimeAnalysis `json:"pointInTimeAnalysis"`
+			RangeAnalysis       []rangeAnalysis       `json:"rangeAnalysis"`
 		}
 
 		var (
@@ -379,19 +401,33 @@ func (h *httpHandlerAnalysisRequest) HandlerFunc(s *Slurpd) http.HandlerFunc {
 			log.Printf("Unknown producer %q.\n", req.Producer)
 			return
 		}
-		if len(req.Analysis) < 1 {
+		if len(req.PointInTimeAnalysis) < 1 && len(req.RangeAnalysis) < 1 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			log.Printf("Empty analysis slice.\n")
+			log.Printf("Empty analysis slices.\n")
 			return
 		}
-		ar = make([]*slurp.AnalysisRequest, len(req.Analysis))
-		for i, a := range req.Analysis {
+		ar = make(
+			[]*slurp.AnalysisRequest,
+			len(req.PointInTimeAnalysis)+len(req.RangeAnalysis),
+		)
+		i := 0
+		for _, a := range req.PointInTimeAnalysis {
 			if _, ok = s.analystMap[a.Analyst]; !ok {
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				log.Printf("Unknown analyst %q.\n", a.Analyst)
 				return
 			}
 			ar[i] = s.analystMap[a.Analyst].AnalysisRequest(a.Time)
+			i++
+		}
+		for _, a := range req.RangeAnalysis {
+			if _, ok = s.analystMap[a.Analyst]; !ok {
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				log.Printf("Unknown analyst %q.\n", a.Analyst)
+				return
+			}
+			ar[i] = s.analystMap[a.Analyst].AnalysisRangeRequest(a.From, a.Until)
+			i++
 		}
 		go s.SlurpAnalysisRequest(p, ar...)
 		WriteJSONResponse(w, "OK")

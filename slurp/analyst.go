@@ -7,8 +7,16 @@ import (
 
 // Analyst is the thing that conducts analysis.
 type Analyst interface {
+	//AnalysisRequest produces an *AnalysisRequest from a single point in time.
 	AnalysisRequest(pointInTime time.Time) *AnalysisRequest
-	AnalysisRange(pointInTime time.Time) (from time.Time, until time.Time)
+	//AnalysisRangeRequest produces an *AnalysisRequest from a time range.
+	AnalysisRangeRequest(from time.Time, until time.Time) *AnalysisRequest
+	//RangeForAnalysisRequest allows you to see what range the Analyst will request for
+	//a single point in time.
+	RangeForAnalysisRequest(pointInTime time.Time) (from time.Time, until time.Time)
+	//RangeForAnalysisRangeRequest allows you to see what range the Analyst will request for
+	//a time range.
+	RangeForAnalysisRangeRequest(from time.Time, until time.Time) (f time.Time, u time.Time)
 }
 
 // AnalysisRequest contains information about how the Analyst wants its data.

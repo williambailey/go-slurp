@@ -38,24 +38,40 @@ func (a *exampleAnalyst) Description() string {
 	return "This is just an example."
 }
 
-func (a *exampleAnalyst) AnalysisRequest(pointInTime time.Time) *slurp.AnalysisRequest {
-	from, until := a.AnalysisRange(pointInTime)
-	return &slurp.AnalysisRequest{
-		Analyst:    a,
-		TimeFrom:   from,
-		TimeUntil:  until,
-		DataLoader: a.dataLoaders,
-		SlurperFunc: func(items <-chan *slurp.Item) {
-			for _ = range items {
-				// blah...
-				time.Sleep(time.Duration(rand.Intn(1000000)) * time.Nanosecond)
-			}
-		},
+func (a *exampleAnalyst) slurpFunc(items <-chan *slurp.Item) {
+	for _ = range items {
+		// blah...
+		time.Sleep(time.Duration(rand.Intn(1000000)) * time.Nanosecond)
 	}
 }
 
-func (a *exampleAnalyst) AnalysisRange(pointInTime time.Time) (time.Time, time.Time) {
+func (a *exampleAnalyst) AnalysisRequest(pointInTime time.Time) *slurp.AnalysisRequest {
+	from, until := a.RangeForAnalysisRequest(pointInTime)
+	return &slurp.AnalysisRequest{
+		Analyst:     a,
+		TimeFrom:    from,
+		TimeUntil:   until,
+		DataLoader:  a.dataLoaders,
+		SlurperFunc: a.slurpFunc,
+	}
+}
+
+func (a *exampleAnalyst) AnalysisRangeRequest(from time.Time, until time.Time) *slurp.AnalysisRequest {
+	return &slurp.AnalysisRequest{
+		Analyst:     a,
+		TimeFrom:    from,
+		TimeUntil:   until,
+		DataLoader:  a.dataLoaders,
+		SlurperFunc: a.slurpFunc,
+	}
+}
+
+func (a *exampleAnalyst) RangeForAnalysisRequest(pointInTime time.Time) (time.Time, time.Time) {
 	return pointInTime, pointInTime.Add(24 * time.Hour)
+}
+
+func (a *exampleAnalyst) RangeForAnalysisRangeRequest(from time.Time, until time.Time) (time.Time, time.Time) {
+	return from, until
 }
 
 type exampleProducer struct {
