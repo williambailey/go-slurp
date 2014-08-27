@@ -40,7 +40,7 @@ type DataLoaderStatValue struct {
 }
 
 // Called updates *DataLoaderStat
-func (s *DataLoaderStatValue) Called(t time.Time, d time.Duration) {
+func (s *DataLoaderStatValue) called(t time.Time, d time.Duration) {
 	if s.FirstCallAt == nil || t.Before(*s.FirstCallAt) {
 		s.FirstCallAt = &t
 	}
@@ -83,14 +83,14 @@ func (w *DataLoaderStatWrapper) LoadData(item *Item) (string, interface{}) {
 	k, v := w.Loader.LoadData(item)
 	d := time.Now().Sub(t)
 	w.mutex.Lock()
-	w.called.Called(t, d)
+	w.called.called(t, d)
 	if k == "" {
-		w.returnEmptyKey.Called(t, d)
+		w.returnEmptyKey.called(t, d)
 	} else {
 		if v == nil {
-			w.returnNilData.Called(t, d)
+			w.returnNilData.called(t, d)
 		} else {
-			w.returnData.Called(t, d)
+			w.returnData.called(t, d)
 		}
 	}
 	w.mutex.Unlock()
