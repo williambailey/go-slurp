@@ -14,6 +14,22 @@ func (l *simpleDataLoader) LoadData(*Item) (string, interface{}) {
 	return l.k, l.v
 }
 
+func TestDataLoaderFunc(t *testing.T) {
+	var (
+		f    DataLoaderFunc
+		fArg *Item
+	)
+	f = func(item *Item) (string, interface{}) {
+		fArg = item
+		return "", nil
+	}
+	i := NewItem(time.Now())
+	f.LoadData(i)
+	if fArg != i {
+		t.Error("Expecting to have the item passed to the func")
+	}
+}
+
 func TestLoadData(t *testing.T) {
 	l1 := &simpleDataLoader{
 		k: "l1",

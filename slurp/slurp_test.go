@@ -23,6 +23,21 @@ func createSimpleSlurpers(count int) []Slurper {
 	return a
 }
 
+func TestSlurperFunc(t *testing.T) {
+	var (
+		f    SlurperFunc
+		fArg <-chan *Item
+	)
+	f = func(items <-chan *Item) {
+		fArg = items
+	}
+	ch := make(chan *Item, 0)
+	f.Slurp(ch)
+	if fArg != ch {
+		t.Error("Expecting to have the chan passed to the func")
+	}
+}
+
 func TestFanOutSlurper(t *testing.T) {
 	slurpers := createSimpleSlurpers(4)
 	ch := make(chan *Item, 3)
