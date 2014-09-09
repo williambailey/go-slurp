@@ -130,19 +130,15 @@ func (h *httpHandlerAnalysts) Description() string {
 }
 
 func (h *httpHandlerAnalysts) Readme() string {
-	return "blah blah blah."
+	return ""
 }
 
 func (h *httpHandlerAnalysts) HandlerFunc(s *Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type analyst struct {
-			Name        string `json:"name"`
-			Description string `json:"description"`
-		}
-		var response = make(map[string]analyst, len(s.analystMap))
+		var response = make(AnalystMapDTO, len(s.analystMap))
 		for k, v := range s.analystMap {
 			d := v.(slurp.Describer)
-			response[k] = analyst{
+			response[k] = AnalystDTO{
 				Name:        d.Name(),
 				Description: d.Description(),
 			}
@@ -166,24 +162,19 @@ func (h *httpHandlerDataLoaders) Description() string {
 }
 
 func (h *httpHandlerDataLoaders) Readme() string {
-	return "blah blah blah."
+	return ""
 }
 
 func (h *httpHandlerDataLoaders) HandlerFunc(s *Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type loader struct {
-			Name        string                `json:"name"`
-			Description string                `json:"description"`
-			Stat        *slurp.DataLoaderStat `json:"stat,omitempty"`
-		}
-		var response = make(map[string]loader, len(s.dataLoaderMap))
+		var response = make(DataLoaderMapDTO, len(s.dataLoaderMap))
 		for k, v := range s.dataLoaderMap {
 			d := v.(slurp.Describer)
 			var stat *slurp.DataLoaderStat
 			if s, ok := v.(*slurp.DataLoaderStatWrapper); ok {
 				stat = s.Stat()
 			}
-			response[k] = loader{
+			response[k] = DataLoaderDTO{
 				Name:        d.Name(),
 				Description: d.Description(),
 				Stat:        stat,
@@ -208,19 +199,15 @@ func (h *httpHandlerProducers) Description() string {
 }
 
 func (h *httpHandlerProducers) Readme() string {
-	return "blah blah blah."
+	return ""
 }
 
 func (h *httpHandlerProducers) HandlerFunc(s *Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type producer struct {
-			Name        string `json:"name"`
-			Description string `json:"description"`
-		}
-		var response = make(map[string]producer, len(s.producerMap))
+		var response = make(ProducerMapDTO, len(s.producerMap))
 		for k, v := range s.producerMap {
 			d := v.(slurp.Describer)
-			response[k] = producer{
+			response[k] = ProducerDTO{
 				Name:        d.Name(),
 				Description: d.Description(),
 			}
@@ -244,35 +231,26 @@ func (h *httpHandlerSlurpers) Description() string {
 }
 
 func (h *httpHandlerSlurpers) Readme() string {
-	return "blah blah blah."
+	return ""
 }
 
 func (h *httpHandlerSlurpers) HandlerFunc(s *Slurpd) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type analysisRequest struct {
-			Analyst   string                `json:"analyst"`
-			TimeFrom  time.Time             `json:"timeFrom"`
-			TimeUntil time.Time             `json:"timeUntil"`
-			Stat      slurp.ItemChannelStat `json:"stat"`
-		}
-		type slurper struct {
-			Started         time.Time             `json:"started"`
-			Stat            slurp.ItemChannelStat `json:"stat"`
-			AnalysisRequest []analysisRequest     `json:"analysisRequest"`
-		}
-		var response = make(map[string]slurper, len(s.slurperMap))
+		var response = make(SlurperMapDTO, len(s.slurperMap))
 		for k, v := range s.slurperMap {
 			rs := v.slurper.RequestStat()
-			ar := make([]analysisRequest, len(rs))
+			ar := make([]AnalysisRequestDTO, len(rs))
 			for i, st := range rs {
-				ar[i] = analysisRequest{
-					Analyst:   s.analystKey(v.slurper.Requests[i].Analyst),
-					TimeFrom:  v.slurper.Requests[i].TimeFrom,
-					TimeUntil: v.slurper.Requests[i].TimeUntil,
-					Stat:      st,
+				ar[i] = AnalysisRequestDTO{
+					Analyst: s.analystKey(v.slurper.Requests[i].Analyst),
+					Range: TimeRangeDTO{
+						From:  v.slurper.Requests[i].TimeFrom,
+						Until: v.slurper.Requests[i].TimeUntil,
+					},
+					Stat: st,
 				}
 			}
-			response[k] = slurper{
+			response[k] = SlurperDTO{
 				Started:         v.started,
 				Stat:            v.slurper.SlurpStat(),
 				AnalysisRequest: ar,
@@ -293,11 +271,11 @@ func (h *httpHandlerAnalysisRange) Path() string {
 }
 
 func (h *httpHandlerAnalysisRange) Description() string {
-	return "For a given point in time returns the range exoected by an analyst."
+	return "For a given point in time returns the range expected by an analyst."
 }
 
 func (h *httpHandlerAnalysisRange) Readme() string {
-	return "blah blah blah."
+	return ""
 }
 
 func (h *httpHandlerAnalysisRange) HandlerFunc(s *Slurpd) http.HandlerFunc {
@@ -348,20 +326,20 @@ func (h *httpHandlerAnalysisRequest) Description() string {
 func (h *httpHandlerAnalysisRequest) Readme() string {
 	return `Request:
 {
-	"producer": "foo",
-	"pointInTimeAnalysis": [
-		{
-			"analyst": "bar",
-			"time": "..."
-		}
-	],
-	"rangeAnalysis": [
-		{
-			"analyst": "bar",
-			"from": "...",
-			"until": "..."
-		}
-	]
+  "producer": "foo",
+  "pointInTimeAnalysis": [
+    {
+      "analyst": "bar",
+      "time": "..."
+    }
+  ],
+  "rangeAnalysis": [
+    {
+      "analyst": "bar",
+      "from": "...",
+      "until": "..."
+    }
+  ]
 }`
 }
 
