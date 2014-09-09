@@ -29,7 +29,7 @@ type ItemChannelStatWrapper struct {
 	mutex  sync.RWMutex
 }
 
-// Stat returns information sbout the item channel.
+// Stat returns information about the item channel.
 func (c *ItemChannelStatWrapper) Stat() ItemChannelStat {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
